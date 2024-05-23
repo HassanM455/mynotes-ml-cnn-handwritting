@@ -1,0 +1,1 @@
+from .training_data_locator import AlphabetImagesLocator, AbsTrainDataLocator
