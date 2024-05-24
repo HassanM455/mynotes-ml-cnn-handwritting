@@ -5,7 +5,29 @@ import torch
 from PIL import Image
 from PIL.PngImagePlugin import PngImageFile
 from src.fs.loader import LetterImageLoader 
-from src.strategy.image.commons import ImageContext, ImageMixin
+from src.strategy.image.commons import (
+    ImageContext, ImageMixin,
+    ImagePreProcScalingContext
+)
+
+class TestImagePreProcScalingContext(unittest.TestCase):
+    
+    def test_initialization(self):
+        context = ImagePreProcScalingContext(300, 200)
+        self.assertEqual(context._new_scale_size_height, 200)
+        self.assertEqual(context._new_scale_size_width, 300)
+        self.assertEqual(context._new_scale_size, (300, 200))
+        
+    def test_new_scale_size_property(self):
+        context = ImagePreProcScalingContext(300, 200)
+        self.assertEqual(context.new_scale_size, (300, 200))
+
+    def test_new_scale_kwargs(self):
+        context = ImagePreProcScalingContext(new_scale_size_height=150, new_scale_size_width=200)
+        self.assertEqual(context.new_scale_size, (200, 150))
+
+
+
 
 class TestImageContext(unittest.TestCase):
 
@@ -335,6 +357,43 @@ class TestImageMixin(unittest.TestCase):
             next(batch_gen)
         
         self.assertIn('Unknown letter type passed to argument `letter` with value: 1', str(context.exception))
+
+    def test_gen_img_batch(self):
+        '''
+        Test verifies that we get a batch of size 2 of Image.Image objects 
+        '''
+
+        batch_size = 2
+        icontext = ImageContext(image_loader=self.mock_loader, image_mode='rgb')
+        batch_gen = ImageMixin._gen_img_batch(icontext, batch_size)
+        
+        batch = next(batch_gen)
+        self.assertEqual(len(batch), batch_size)
+        self.assertIsInstance(batch, tuple)
+       
+        _ = next(batch_gen)
+        batch = next(batch_gen)
+        self.assertEqual(len(batch), 1)
+        self.assertIsInstance(batch[0], Image.Image)
+
+    def test_get_squared_images(self):
+        '''
+        Verifying that the returned images of rectangular shape are images of square shape.
+        Also verifying the returned tuple is the same size as the input
+        '''
+        images = tuple([Image.new('RGB', (100, 200)), Image.new('RGB', (100, 200))])
+        squared_images = ImageMixin._get_squared_images(images)
+        self.assertEqual(len(images),len(squared_images))
+        for si in squared_images:
+            self.assertEqual((200,200), si.size)
+
+
+
+
+
+
+         
+
 
 
 if __name__ == '__main__':

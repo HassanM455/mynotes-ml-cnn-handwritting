@@ -18,14 +18,6 @@ class AbstractLoaderCreator(ABC):
     def factory_method(self, main_dir: Optional[str] = None):
         raise NotImplemented()
 
-class LetterImageLoaderCreator(AbstractLoaderCreator):
-
-    @classmethod
-    def factory_method(cls, main_dir: Optional[str] = None):
-        main_dir = main_dir if main_dir else 'images'
-        data_locator = AlphabetImagesLocator(main_dir)
-        return LetterImageLoader(data_locator = data_locator)
-
 
 class LetterImageLoader:
 
@@ -115,4 +107,12 @@ class LetterImageLoader:
                 data = await fp.read()
                 yield Image.open(io.BytesIO(data)) 
 
+
+class LetterImageLoaderCreator(AbstractLoaderCreator):
+
+    @classmethod
+    def factory_method(cls, main_dir: Optional[str] = None) -> LetterImageLoader:
+        main_dir = main_dir if main_dir else 'images'
+        data_locator = AlphabetImagesLocator(main_dir)
+        return LetterImageLoader(data_locator = data_locator)
 

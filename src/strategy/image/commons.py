@@ -101,8 +101,53 @@ class ImageContext:
         return None
 
 
-        
+class ImagePreProcScalingContext:
+    
+    def __init__(
+        self, 
+        new_scale_size_width: int,
+        new_scale_size_height: int,
+        make_square: bool = False
+    ):
+
+        self._new_scale_size_height = new_scale_size_height
+        self._new_scale_size_width = new_scale_size_width
+        self._new_scale_size = (new_scale_size_width, new_scale_size_height)
+        self.make_square = make_square
+
+    @property
+    def new_scale_size(self) -> Tuple[int, int]:
+        '''
+        Returned tuple is (width, height), matching that of a PIL.Image object 
+        '''
+        return (self._new_scale_size_width, self._new_scale_size_height)
+
+
+
+
 class ImageMixin:
+
+    @staticmethod
+    def _gen_img_batch(
+        icontext: ImageContext,
+        batch_size: int       
+    ) -> Generator[Tuple[Image.Image], None, None]:
+
+        batch = []
+        img_gen = icontext.ildr.gen_all_images()
+        for img in img_gen :
+            batch.append(img)
+            if batch_size == len(batch): 
+                yield tuple(batch)
+                batch = []
+
+        if not batch:
+            raise Exception(
+                f"The batch is empty when generator `{icontext.ildr.gen_all_images}` is called. "
+            )
+        
+        yield tuple(batch)
+
 
     @staticmethod
     def _gen_img_batch_as_nparray(
@@ -156,4 +201,25 @@ class ImageMixin:
         yield np.array(batch)
 
 
+    @staticmethod
+    def _get_squared_images(images: Tuple[Image.Image, ...]) -> Tuple[Image.Image, ...]:
+
+        image_color_map = {
+            "RGB": (255, 255, 255),
+            "L": 255
+        }
+        squared_images = [] 
+        for image in images:
+            colors = image_color_map[image.mode]
+            new_side_size = max(image.size)
+            new_image = Image.new(
+                image.mode, 
+                (new_side_size, new_side_size), 
+                colors 
+            )
+            left = (new_side_size - image.size[0]) // 2
+            top = (new_side_size - image.size[1]) // 2
+            new_image.paste(image, (left, top))
+            squared_images.append(new_image)
+        return tuple(squared_images)
 
